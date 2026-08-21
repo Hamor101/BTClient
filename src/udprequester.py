@@ -1,16 +1,19 @@
 import random
 import struct
+import socket
 from numpy import uint64, uint32, iinfo
 
 
 class udpScraper:
-    def __init__(self, info):
+    def __init__(self, trackerAddress:tuple, info:bytes):
+        self.iHash = info
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.trackerAddress = trackerAddress
         try:
             self.protocolID = uint64(0x41727101980)
             self.action = uint32(0) #uint32(iinfo(uint32).max - 1)
-            self.transactionID = uint32(iinfo(uint32).max) #self.getRandom32()
-            self.connnectionID = uint32(iinfo(uint32).max) # uint32()
-            self.iHash = info
+            self.transactionID = self.getRandom32() #uint32(iinfo(uint32).max)
+            self.connnectionID = uint32(0) #uint32(iinfo(uint32).max)
         except OverflowError:
             print("[UDPRequester __init__]: \033[41mError:\033[0m Packet variable out of bounds for uint32")
             return
@@ -29,8 +32,9 @@ class udpScraper:
 
         packet = struct.pack(">QQ", self.protocolID, combined)
         conv = "0x" + str(packet.hex())
-        print(conv)
-        print(bin(int(conv, 16)))
+        # print(conv)
+        # print("\n\n")
+        # print(bin(int(conv, 16)))
         return packet
 
     def getScrapeRequestPacket(self):
@@ -43,15 +47,25 @@ class udpScraper:
 
         packet = struct.pack(">QQ20s", self.connnectionID, combined, self.iHash)
         conv = "0x" + str(packet.hex())
-        print(conv)
-        print(bin(int(conv, 16)))
+        # print(conv)
+        # print("\n\n")
+        # print(bin(int(conv, 16)))
         return packet
 
+    def sendRequest(self, request:bytes):
+        self.socket.sendto(request, self.trackerAddress)
 
+    def listen(self):
+        resp, addr = self.socket.recvfrom(4096)
+        self.socket.close()
+        print(resp)
+        return resp
 
 
 
 
 if __name__ == "__main__":
-    r = udpScraper(None)
-    print(r.getConnectRequestPacket())
+    r = udpScraper((socket.gethostbyname("tracker.opentrackr.org"), 1337), None)
+    connPack = r.getConnectRequestPacket()
+    r.sendRequest(connPack)
+    r.listen()
