@@ -4,6 +4,7 @@ import random
 import bencoding
 import trackerget
 import printer
+import udprequester
 
 startuptime = time.time()
 
@@ -17,19 +18,19 @@ metainfo = decoderObject.decodeFile()
 info_hash = decoderObject.getInfoHash()
 piece_len = metainfo[b'info'][b'piece length']
 num_pieces = len(metainfo[b'info'][b'pieces']) / 20
-printer.printDict(metainfo)
-
-
 program_state = {"port":0, "uploaded":0, "downloaded":0, "left":0}
 program_state["port"] = random.randint(6881, 6889)
 program_state["left"] = decoderObject.getLenBytes()
+# printer.printDict(metainfo)
 
-trackerRespData = trackerget.scrapeHTTPTracker(metainfo, info_hash, startuptime, program_state, "stopped")
-decoderObject = bencoding.Decoder(data=trackerRespData, file=False)
+r = udprequester.udpScraper(info_hash)
+print(r.getScrapeRequestPacket())
 
-tracker_response = decoderObject.decodeDict()
-printer.printDict(tracker_response)
-# print(tracker_response["interval"])
+
+# trackerRespData = trackerget.scrapeHTTPTracker(metainfo, info_hash, startuptime, program_state, "stopped")
+# decoderObject = bencoding.Decoder(data=trackerRespData, file=False)
+# tracker_response = decoderObject.decodeDict()
+# printer.printDict(tracker_response)
 
 
 time_taken = time.time() - startuptime

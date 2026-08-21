@@ -21,7 +21,7 @@ class Decoder:
                 break
 
     def getInfoHash(self):
-        print(hashlib.sha1(self.data[self.infoLoc:self.infoEnd]).digest())
+        # print(hashlib.sha1(self.data[self.infoLoc:self.infoEnd]).digest())
         return hashlib.sha1(self.data[self.infoLoc:self.infoEnd]).digest()
     
     def getLenBytes(self):
