@@ -58,7 +58,7 @@ class udpScraper:
     def listen(self):
         resp, addr = self.socket.recvfrom(4096)
         self.socket.close()
-        print(resp)
+        # print(resp)
         return resp
 
 
@@ -68,4 +68,8 @@ if __name__ == "__main__":
     r = udpScraper((socket.gethostbyname("tracker.opentrackr.org"), 1337), None)
     connPack = r.getConnectRequestPacket()
     r.sendRequest(connPack)
-    r.listen()
+    resp = r.listen()
+    print(bin(int("0x" + str(resp.hex()), 16)))
+    unpacked = struct.unpack(">QQ", resp)
+    print(bin(unpacked[0]))
+    print(bin(unpacked[1]))
