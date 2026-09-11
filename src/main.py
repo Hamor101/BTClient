@@ -21,11 +21,11 @@ num_pieces = len(metainfo[b'info'][b'pieces']) / 20
 program_state = {"port":0, "uploaded":0, "downloaded":0, "left":0}
 program_state["port"] = random.randint(6881, 6889)
 program_state["left"] = decoderObject.getLenBytes()
-# printer.printDict(metainfo)
+printer.printDict(metainfo)
 # print(metainfo)
 
-r = udprequester.udpScraper(('', 1337),info_hash)
-print(r.getScrapeRequestPacket())
+# r = udprequester.udpScraper(('', 1337),info_hash)
+# print(r.getScrapeRequestPacket())
 
 
 # trackerRespData = trackerget.scrapeHTTPTracker(metainfo, info_hash, startuptime, program_state, "stopped")
