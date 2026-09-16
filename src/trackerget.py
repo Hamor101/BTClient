@@ -10,7 +10,7 @@ def generatePeerId(startuptime):
     peerId = (str(process_id) + str(startuptime)).encode()
     return peerId
 
-def scrapeHTTPTracker(metainfo, info_hash, startuptime, programState, event):
+def HTTP_announce(metainfo, info_hash, startuptime, programState, event):
     startuptime = int(startuptime)
     uribase = metainfo[b'announce'].decode()
     info_hash = info_hash

@@ -5,6 +5,7 @@ import bencoding
 import trackerget
 import printer
 import udprequester
+import hashlib
 
 startuptime = time.time()
 
@@ -25,15 +26,32 @@ program_state["left"] = decoderObject.getLenBytes()
 # print(metainfo)
 
 r = udprequester.udpScraper(('tracker.opentrackr.org', 1337),info_hash)
+hashes = [b"hello", b"how r u", b"hi", b"greetings!"]
+hashes = [hashlib.sha1(i).digest() for i in hashes]
+out = r.hexToBinaryLossless(r.getScrapeRequestPacket(hashes))
+out = out[128::]
+
+
+# Everything below this is only for testing
+out = [out[i-160:i:] for i in range(160, len(out), 160)]
+# out2 = [out2[i-1:i:] for i in range(1, len(out2)-1, 80)]
+hashes = [r.hexToBinaryLossless(i) for i in hashes]
+for hsh in range(len(out)):
+    print(f"{out[hsh]}:\n{hashes[hsh]}", end="\n\n")
+# print("\n\n\n")
+# for hsh in hashes:
+#     print(hsh, end="\n\n")
+# print(hashes, sep="\n")
 # r.connect()
 # requestPacket = r.getScrapeRequestPacket()
+# r.sendPacket(requestPacket)
+# resp = r.listen()
+# with open("scrapeResponse.bin", "rb") as f:
+#     resp = f.read()
+# print(r.hexToBinaryLossless(resp))
+# decodedData = r.decodePacket(resp)
+# print(f"Transaction_ID: {decodedData[0]}\nSeeders: {int(decodedData[1],2)}\nCompleted:{int(decodedData[2], 2)}\nLeechers:{int(decodedData[3], 2)}")
 
-with open("scrapeResponse.bin", "rb") as f:
-    resp = f.read()
-
-print(r.hexToBinaryLossless(resp))
-decodedData = r.decodePacket(resp)
-print(f"Transaction_ID: {decodedData[0]}\nSeeders: {int(decodedData[1],2)}\nCompleted:{int(decodedData[2], 2)}\nLeechers:{int(decodedData[3], 2)}")
 
 # with open("scrapeResponse.bin", "wb") as f:
 #     f.write(resp)
