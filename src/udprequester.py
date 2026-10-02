@@ -3,7 +3,7 @@ import struct
 import socket
 import os
 import hashlib
-from numpy import uint64, uint32, uint16, iinfo
+from numpy import uint64, uint32, uint16, int32, iinfo
 
 # Conversion constant from bytes to bits
 BYTES = 8
@@ -11,9 +11,10 @@ BYTES = 8
 
 class udpScraper:
 
-    dataSizes = {"action":32,
+    dataSizes = {"connection_id":64,
+                 "action":32,
+                 "err_msg":32,
                  "transaction_id":32,
-                 "connection_id":64,
                  "seeders":32,
                  "completed":32,
                  "leechers":32,
@@ -34,9 +35,10 @@ class udpScraper:
 
         self.transactionID  = self.getRandom32()          #uint32(iinfo(uint32).max)
         self.protocolID     = uint64(0x41727101980)
-        self.connnectionID  = uint64(0)                   #uint64(iinfo(uint64).max)
+        self.connectionID  = uint64(0)                   #uint64(iinfo(uint64).max)
         self.peerID = self.generatePeerId(starttime)
         self.state = programState
+        self.key = 0
 
     def binaryToIpConverter(self, ip:str):
         octets = [str(int(ip[(i-1)*8:i*8],2)) for i in range(1,5)]
@@ -86,18 +88,18 @@ class udpScraper:
         combined = combined << 32
         combined = combined | self.transaction_id
         if iHashes == None:
-            packet = struct.pack(">QQ20s", self.connnectionID, combined, self.iHash)
+            packet = struct.pack(">QQ20s", self.connectionID, combined, self.iHash)
         else:
-            packet = struct.pack((">QQ" + "20s"*len(iHashes)), self.connnectionID, combined, *iHashes)
+            packet = struct.pack((">QQ" + "20s"*len(iHashes)), self.connectionID, combined, *iHashes)
         return packet
 
-    def getAnnounceRequestPacket(self, event, ip=uint32(0), port=uint16(0), key=uint32(0), num_want=uint32(0)):
+    def getAnnounceRequestPacket(self, event, ip=uint32(0), port=uint16(0), key=uint32(0), num_want=int32(0)):
         event = uint32(event)
-        num_want = uint32(num_want)
+        num_want = int32(num_want)
         action = self.actions["announce"]
         self.transactionID = self.getRandom32()
-        packet = struct.pack(">QLL20s20sQQQLLLLH",
-                            self.connnectionID,
+        packet = struct.pack(">QLL20s20sQQQLLLlH",
+                            self.connectionID,
                             action, 
                             self.transactionID,
                             self.iHash,
@@ -124,9 +126,7 @@ class udpScraper:
         return packetData
 
     def decodeErrorPacket(self, packet):
-        packetData = [packet[:self.dataSizes["transaction_id"]:], packet[self.dataSizes["transaction_id"]::]]
-        # errMessage = packetData[1]
-        # errMessage = (errMessage[])
+        packetData = [packet[:self.dataSizes["transaction_id"]:], packet[self.dataSizes["err_msg"]::]]
         return packetData
 
     def decodeScrapePacket(self, packet, n_scrapes = 1):
@@ -162,9 +162,7 @@ class udpScraper:
     def decodePacket(self, packet:bytes):
         errBackup = packet
         packet = self.hexToBinaryLossless(packet)
-        # action_id : (decoderFunctionName, packetExpectedSize)
         actions = {0:(self.decodeConnectPacket, 16*BYTES), 1:(self.decodeAnnouncePacket, 20*BYTES), 2:(self.decodeScrapePacket, 8*BYTES), 3:(self.decodeErrorPacket, 8*BYTES)}
-        # Find the function from the actions dictionary corresponding to the action field of the response packet
         action_field = int(packet[:self.dataSizes["action"]:],2)
         action_tuple = actions[action_field]
         if len(packet) < action_tuple[1]:
@@ -173,7 +171,7 @@ class udpScraper:
         if action_field == 3:
             print(f"\033[41m[*]\033[0m UDP Tracker Error. Message: \033[41m[{errBackup[self.dataSizes["action"]//4::].decode()}]\033[0m")
 
-        # strip the packet of the action field, call the function, and provide it as an argument
+        # Decoder function receives packet WITHOUT the [action] field
         return action_tuple[0](packet[self.dataSizes["action"]::])
 
     def sendPacket(self, request:bytes):
@@ -184,17 +182,32 @@ class udpScraper:
         self.sendPacket(packet)
         resp = self.listen()
         resp = self.decodePacket(resp)
-        self.connnectionID = uint64(int(resp[1], 2))
-        print(f"\033[44m[*]\033[0m New connection ID: {str(bin(self.connnectionID))[2::]}" )
+        self.connectionID = uint64(int(resp[1], 2))
+        print(f"\033[44m[*]\033[0m New connection ID: {str(bin(self.connectionID))[2::]}" )
         return resp
 
+    def scrape(self, info_hashes:list = None):
+        if not self.connectionID:
+            self.connect()
+        request = self.getScrapeRequestPacket(info_hashes)
+        self.sendPacket(request)
+        response = self.listen()
+        return self.decodePacket(response)
+
+    def announce(self, event=0, num_want=-1, ret_ip=0, ret_port=0):
+        if not ret_port:
+            ret_port = self.state["port"]
+        if not self.connectionID:
+            self.connect()
+        request = self.getAnnounceRequestPacket(event, ret_ip, ret_port, self.key, num_want)
+        self.sendPacket(request)
+        response = self.listen()
+        return self.decodePacket(response)
+    
     def listen(self):
         resp, addr = self.socket.recvfrom(4096)
-        # print(resp)
         return resp
 
-    def request(self, requestType:str):
-        ...
     
 
 

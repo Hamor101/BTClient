@@ -26,15 +26,13 @@ program_state["left"] = decoderObject.getLenBytes()
 # print(metainfo)
 
 r = udprequester.udpScraper(('tracker.opentrackr.org', 1337),info_hash, program_state, startuptime)
+print(r.announce(1, -1))
 # r.connect()
 # pack = r.getAnnounceRequestPacket(0, num_want=10)
 # r.sendPacket(pack)
 # resp = r.listen()
 
-with open("announce_response.bin", "rb") as f:
-    resp = f.read()
 
-print(r.decodePacket(resp))
 
 time_taken = time.time() - startuptime
 print(f"TIME TAKEN:{time_taken*1000} ms")
