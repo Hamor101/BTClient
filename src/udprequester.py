@@ -207,33 +207,3 @@ class udpScraper:
     def listen(self):
         resp, addr = self.socket.recvfrom(4096)
         return resp
-
-    
-
-
-if __name__ == "__main__":
-    r = udpScraper((socket.gethostbyname("tracker.opentrackr.org"), 1337), None)
-    # r.connect()
-    
-    # with open("announce_response.bin", "rb") as f:
-    #     resp = f.read()
-    # # resp = r.hexToBinaryLossless(resp)
-    # print(resp.hex())
-    # # r.decodeAnnouncePacket(resp)
-    # print(r.decodePacket(resp))
-
-    r.getAnnounceRequestPacket(0)
-
-    # packet = r.getConnectRequestPacket()
-    # r.sendRequest(packet)
-    # resp = r.listen()
-
-    # tId = 0
-    # with open("transactionIdTemp.txt", "r") as f:
-    #     tId = f.read()
-    # hb = r.hexToBinaryLossless(resp)
-    # print(len(hb))
-    # print(hb)
-    # dec = r.decodeConnectResponsePacket(resp)
-    # print(dec)
-    # print(r.hexToBinaryLossless())
