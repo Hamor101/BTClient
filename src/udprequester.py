@@ -29,16 +29,16 @@ class udpScraper:
 
     def __init__(self, trackerAddress:tuple, info:bytes, programState:dict, starttime:int):
 
-        self.iHash = info
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.iHash          = info
+        self.socket         = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.trackerAddress = trackerAddress
 
         self.transactionID  = self.getRandom32()          #uint32(iinfo(uint32).max)
         self.protocolID     = uint64(0x41727101980)
-        self.connectionID  = uint64(0)                   #uint64(iinfo(uint64).max)
-        self.peerID = self.generatePeerId(starttime)
-        self.state = programState
-        self.key = 0
+        self.connectionID   = uint64(0)                   #uint64(iinfo(uint64).max)
+        self.peerID         = self.generatePeerId(starttime)
+        self.state          = programState
+        self.key            = 0
 
     def binaryToIpConverter(self, ip:str):
         octets = [str(int(ip[(i-1)*8:i*8],2)) for i in range(1,5)]
@@ -71,26 +71,19 @@ class udpScraper:
 
     def getConnectRequestPacket(self):
         action = self.actions["connect"]
-        self.transaction_id = self.getRandom32()
+        self.transactionID = self.getRandom32()
 
-        combined = uint64(action)
-        combined = combined << 32
-        combined = combined | self.transaction_id
-
-        packet = struct.pack(">QQ", self.protocolID, combined)
+        packet = struct.pack(">QLL", self.protocolID, action, self.transactionID)
         return packet
 
     def getScrapeRequestPacket(self, iHashes:list = None):
         action = self.actions["scrape"]
-        self.transaction_id = self.getRandom32()
+        self.transactionID = self.getRandom32()
 
-        combined = uint64(action)
-        combined = combined << 32
-        combined = combined | self.transaction_id
         if iHashes == None:
-            packet = struct.pack(">QQ20s", self.connectionID, combined, self.iHash)
+            packet = struct.pack(">QLL20s", self.connectionID, action, self.transactionID,  self.iHash)
         else:
-            packet = struct.pack((">QQ" + "20s"*len(iHashes)), self.connectionID, combined, *iHashes)
+            packet = struct.pack((">QLL" + "20s"*len(iHashes)), self.connectionID, action, self.transactionID, *iHashes)
         return packet
 
     def getAnnounceRequestPacket(self, event, ip=uint32(0), port=uint16(0), key=uint32(0), num_want=int32(0)):
@@ -115,7 +108,6 @@ class udpScraper:
                             )
         return packet
 
-
     def decodeConnectPacket(self, packet):
         fields = [self.dataSizes["transaction_id"], self.dataSizes["connection_id"]]
         packetData = []
@@ -123,7 +115,7 @@ class udpScraper:
         for i in fields:
             packetData.append(packet[:i:])
             packet = packet[i::]
-        return packetData
+        return [int(i, 2) for i in packetData]
 
     def decodeErrorPacket(self, packet):
         packetData = [packet[:self.dataSizes["transaction_id"]:], packet[self.dataSizes["err_msg"]::]]
@@ -143,10 +135,12 @@ class udpScraper:
 
     def decodeAnnouncePacket(self, packet):
         fields = ["transaction_id", "interval", "leechers", "seeders"]
+        output = {"transaction_id":0, "interval":1, "leechers":2, "seeders":3, "peers":4}
         fields = self.getFieldSizes(fields)
         variableFields = ["ip_address", "port"]
         variableFields = self.getFieldSizes(variableFields)
         packetData = []
+        peers = []
 
         for i in fields:
             packetData.append(packet[:i:])
@@ -156,6 +150,23 @@ class udpScraper:
             for i in variableFields:
                 packetData.append(packet[:i:])
                 packet = packet[i::]
+
+        packetData[:4] = [int(i,2) for i in packetData[:4]]
+        packetData[4::2] = [self.binaryToIpConverter(i) for i in packetData[4::2]]
+        packetData[5::2] = [int(i,2) for i in packetData[5::2]]
+
+
+        try:
+            for k,v in output.items():
+                output[k] = packetData[v]
+
+            for i in range(4, len(packetData), 2):
+                peers.append([packetData[i], packetData[i+1]])
+            
+            packetData = packetData[:4:]
+            packetData.append(peers)
+        except IndexError:
+            print("Tracker returned no peers, num_want was 0.")
 
         return packetData
 
@@ -182,7 +193,7 @@ class udpScraper:
         self.sendPacket(packet)
         resp = self.listen()
         resp = self.decodePacket(resp)
-        self.connectionID = uint64(int(resp[1], 2))
+        self.connectionID = uint64(resp[1])
         print(f"\033[44m[*]\033[0m New connection ID: {str(bin(self.connectionID))[2::]}" )
         return resp
 

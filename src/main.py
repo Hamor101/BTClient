@@ -22,15 +22,13 @@ num_pieces = len(metainfo[b'info'][b'pieces']) / 20
 program_state = {"port":0, "uploaded":0, "downloaded":0, "left": decoderObject.getLenBytes()}
 program_state["port"] = random.randint(6881, 6889)
 program_state["left"] = decoderObject.getLenBytes()
-# printer.printDict(metainfo)
+printer.printDict(metainfo)
 # print(metainfo)
 
 r = udprequester.udpScraper(('tracker.opentrackr.org', 1337),info_hash, program_state, startuptime)
-print(r.announce(1, -1))
-# r.connect()
-# pack = r.getAnnounceRequestPacket(0, num_want=10)
-# r.sendPacket(pack)
-# resp = r.listen()
+# print(r.announce(1, -1))
+
+
 
 
 
