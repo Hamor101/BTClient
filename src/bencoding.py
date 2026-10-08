@@ -1,7 +1,6 @@
 import string
 import hashlib
 
-
 class Decoder:
     def __init__(self, data, file = True):
         self.data = data   # Stores raw data of the object to be decoded
@@ -19,7 +18,7 @@ class Decoder:
                 # print(self.data[i:i+4])
                 self.infoLoc = i+4
                 break
-
+    
     def getInfoHash(self):
         # print(hashlib.sha1(self.data[self.infoLoc:self.infoEnd]).digest())
         return hashlib.sha1(self.data[self.infoLoc:self.infoEnd]).digest()
@@ -33,7 +32,7 @@ class Decoder:
                 length += i[b'length']
             return length
 
-    def decodeFile(self):
+    def decodeFile(self) -> dict:
         self.decoded = self.functionMap[self.data[self.index]]()
         return self.decoded
 

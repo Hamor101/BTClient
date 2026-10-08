@@ -2,10 +2,9 @@ import time
 import random
 
 import bencoding
-import trackerget
+import http_tracker
 import printer
-import udprequester
-import hashlib
+import udp_tracker
 
 startuptime = time.time()
 
@@ -13,22 +12,26 @@ startuptime = time.time()
 PATH = "C:/Users/Hamor_odz16ig/documents/code projects/python/bittorrent/testfiles"
 file_path = PATH + "/" + "test_torrent.torrent"
 
+# metainfo.metaInfo(file_path)
 
-decoderObject = bencoding.Decoder(file_path, True)
-metainfo = decoderObject.decodeFile()
-info_hash = decoderObject.getInfoHash()
-piece_len = metainfo[b'info'][b'piece length']
-num_pieces = len(metainfo[b'info'][b'pieces']) / 20
-program_state = {"port":0, "uploaded":0, "downloaded":0, "left": decoderObject.getLenBytes()}
+fileParser = bencoding.Decoder(file_path, True)
+metainfo = fileParser.decodeFile()
+info_hash = fileParser.getInfoHash()
+
+
+
+program_state = {"port":0, "uploaded":0, "downloaded":0, "left": fileParser.getLenBytes()}
 program_state["port"] = random.randint(6881, 6889)
-program_state["left"] = decoderObject.getLenBytes()
-printer.printDict(metainfo)
-# print(metainfo)
 
-r = udprequester.udpScraper(('tracker.opentrackr.org', 1337),info_hash, program_state, startuptime)
-# print(r.announce(1, -1))
+# resp = http_tracker.HTTP_announce(metainfo, info_hash, startuptime, program_state, "None")
+with open("http_tracker_response.bin", "rb") as f:
+   resp = f.read()
+
+# printer.printDict(bencoding.Decoder("http_tracker_response.bin", True).decodeFile())
 
 
+# printer.printDict()
+# printer.printDict(metainfo)
 
 
 

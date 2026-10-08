@@ -11,21 +11,21 @@ BYTES = 8
 
 class udpScraper:
 
-    dataSizes = {"connection_id":64,
-                 "action":32,
-                 "err_msg":32,
-                 "transaction_id":32,
-                 "seeders":32,
-                 "completed":32,
-                 "leechers":32,
-                 "interval":32,
-                 "ip_address":32,
-                 "port":16}
+    dataSizes = {"connection_id"    :64,
+                 "action"           :32,
+                 "err_msg"          :32,
+                 "transaction_id"   :32,
+                 "seeders"          :32,
+                 "completed"        :32,
+                 "leechers"         :32,
+                 "interval"         :32,
+                 "ip_address"       :32,
+                 "port"             :16}
 
-    actions = {"connect":uint32(0),
-               "announce":uint32(1),
-               "scrape":uint32(2),
-               "error":uint32(3)}
+    actions = {"connect"    :uint32(0),
+               "announce"   :uint32(1),
+               "scrape"     :uint32(2),
+               "error"      :uint32(3)}
 
     def __init__(self, trackerAddress:tuple, info:bytes, programState:dict, starttime:int):
 
@@ -166,7 +166,7 @@ class udpScraper:
             packetData = packetData[:4:]
             packetData.append(peers)
         except IndexError:
-            print("Tracker returned no peers, num_want was 0.")
+            print("\033[43m[*]\033[0m Tracker returned no peers. (num_want=0)")
 
         return packetData
 
@@ -205,7 +205,9 @@ class udpScraper:
         response = self.listen()
         return self.decodePacket(response)
 
-    def announce(self, event=0, num_want=-1, ret_ip=0, ret_port=0):
+    def announce(self, event="None", num_want=-1, ret_ip=0, ret_port=0):
+        eventsMap = {"None":0, "Completed":1, "Started":2, "Stopped":3}
+        event = eventsMap[event]
         if not ret_port:
             ret_port = self.state["port"]
         if not self.connectionID:
