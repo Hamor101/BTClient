@@ -1,3 +1,5 @@
+# Implement class for creating, sending, receiving, decoding packets for use with bittorrent UDP trackers.
+
 import random
 import struct
 import socket

@@ -1,3 +1,5 @@
+# Implement class for decoding bencoded strings and files, specifically .torrent files
+
 import string
 import hashlib
 
