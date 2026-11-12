@@ -44,7 +44,7 @@ class Decoder:
             self.index += 1
         return int(self.data[initial+1:self.index])
     
-    def decodeStr(self) -> str:
+    def decodeStr(self):
         initial = self.index
         while self.data[self.index] != b':'[0]:
             self.index += 1
