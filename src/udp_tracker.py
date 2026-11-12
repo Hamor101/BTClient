@@ -1,7 +1,7 @@
 # Implement class for creating, sending, receiving, decoding packets for use with bittorrent UDP trackers.
 
 import random
-import struct
+from struct import pack, unpack
 import socket
 import os
 import hashlib
@@ -75,7 +75,7 @@ class udpScraper:
         action = self.actions["connect"]
         self.transactionID = self.getRandom32()
 
-        packet = struct.pack(">QLL", self.protocolID, action, self.transactionID)
+        packet = pack(">QLL", self.protocolID, action, self.transactionID)
         return packet
 
     def getScrapeRequestPacket(self, iHashes:list = None):
@@ -83,9 +83,9 @@ class udpScraper:
         self.transactionID = self.getRandom32()
 
         if iHashes == None:
-            packet = struct.pack(">QLL20s", self.connectionID, action, self.transactionID,  self.iHash)
+            packet = pack(">QLL20s", self.connectionID, action, self.transactionID,  self.iHash)
         else:
-            packet = struct.pack((">QLL" + "20s"*len(iHashes)), self.connectionID, action, self.transactionID, *iHashes)
+            packet = pack((">QLL" + "20s"*len(iHashes)), self.connectionID, action, self.transactionID, *iHashes)
         return packet
 
     def getAnnounceRequestPacket(self, event, ip=uint32(0), port=uint16(0), key=uint32(0), num_want=int32(0)):
@@ -93,7 +93,7 @@ class udpScraper:
         num_want = int32(num_want)
         action = self.actions["announce"]
         self.transactionID = self.getRandom32()
-        packet = struct.pack(">QLL20s20sQQQLLLlH",
+        packet = pack(">QLL20s20sQQQLLLlH",
                             self.connectionID,
                             action, 
                             self.transactionID,
@@ -208,6 +208,11 @@ class udpScraper:
         return self.decodePacket(response)
 
     def announce(self, event="None", num_want=-1, ret_ip=0, ret_port=0):
+        try:
+            assert event in eventsMap.keys()
+        except AssertionError:
+            print("\033[41m[*]\033[0m udpScraper.announce() was given invalid \'event\' argument.")
+
         eventsMap = {"None":0, "Completed":1, "Started":2, "Stopped":3}
         event = eventsMap[event]
         if not ret_port:
