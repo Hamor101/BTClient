@@ -17,13 +17,12 @@ class Peer():
 
         
 class PeerMessage():
-    msgs = ["keep-alive", "choke", "unchoke", "interested", "not interested"]
-    msgs2 = [("have", 15), ("bitfield", b"123432"), ("request", 1,2,3), ("piece", 4,5,b"ababdhasbdsb"), ("cancel", 1,2,3), ("port", 1337)]
+    msgs = [("keep-alive"), ("choke"), ("unchoke"), ("interested"), ("not-interested"), ("have", 15), ("bitfield", b"123432"), ("request", 1,2,3), ("piece", 4,5,b"ababdhasbdsb"), ("cancel", 1,2,3), ("port", 1337)]
     msgNamemsgIdMap = {"keep-alive"     :-1,
                        "choke"          :0,
                        "unchoke"        :1,
                        "interested"     :2,
-                       "not_interested" :3,
+                       "not-interested" :3,
                        "have"           :4,
                        "bitfield"       :5,
                        "request"        :6,
@@ -45,10 +44,13 @@ class PeerMessage():
                              7:("IBHH", 9)}
 
     def __init__(self, msgName, *payload):
-        if self.msgNamemsgIdMap[msgName] in [5, 7]:
-            self.varLenMessage(msgName, *payload)
-        else:
-            self.fixedLenMessage(msgName, *payload)
+        try:
+            if self.msgNamemsgIdMap[msgName] in [5, 7]:
+                self.varLenMessage(msgName, *payload)
+            else:
+                self.fixedLenMessage(msgName, *payload)
+        except KeyError:
+            print(f"\033[41m[*]\033[0mUnknown message type: {msgName}")
 
 
     def fixedLenMessage(self, messageName, *payload):
@@ -73,7 +75,6 @@ class PeerMessage():
         payloadLenTuple = self.variableLenPayloadMap[messageId]
         formatStr = ">" + payloadLenTuple[0] + str(len(bitfield)) + "s"
         try:
-            print(formatStr)
             self.packet = struct.pack(formatStr, payloadLenTuple[1] + len(bitfield), messageId, bitfield)
         except struct.error as e:
             print("\033[41m[*]\033[0m Error: Could not pack \'bitfield\' message.")
@@ -90,8 +91,6 @@ class PeerMessage():
             print("\033[41m[*]\033[0m Error: Could not pack \'piece\' message.")
             print(f"\033[41m[*]\033[0m:::: {e}")
         
-        
-
 class PeerManager():
     def __init__(self, own_id):
         self.peers = []
@@ -120,6 +119,10 @@ if __name__ == "__main__":
     # pm =  PeerManager(b"111")
     # pm.handshake(ih)
     ut = udp_tracker.udpScraper((), b"", {}, 0)
-    pm = PeerMessage("choke")
+    args = [["keep-alive"], ["choke"], ["unchoke"], ["interested"], ["not-interested"], ["have", 15], ["bitfield", b"123432"], ["request", 1,2,3], ["piece", 4,5,b"ababdhasbdsb"], ["cancel", 1,2,3], ["port", 1337]]
+    for i in args:
+        pm = PeerMessage(*i)
+        print(f"\033[44m{i[0]}\033[0m:")
+        print(ut.hexToBinaryLossless(pm.packet))
+        
     # pm.payloadMsg("request", 1, 320)
-    print(ut.hexToBinaryLossless(pm.packet))
